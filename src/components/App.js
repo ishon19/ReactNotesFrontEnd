@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Note from "./Note";
 import noteService from "../services/note";
+import loginService from "../services/login";
 import Notification from "./Notification";
+import LoginForm from "./Login";
+import Toggleable from "./Toggleable";
+import NoteForm from "./NoteForm";
 
 const Footer = () => {
   const footerStyle = {
@@ -24,6 +28,8 @@ const App = (props) => {
   const [errorMessage, setErrorMessage] = useState(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [user, setUser] = useState(null);
+  const [loginVisible, setLoginVisible] = useState(false);
 
   const hook = () => {
     console.log("effect");
@@ -32,8 +38,28 @@ const App = (props) => {
 
   useEffect(hook, []);
 
-  const handleLogin = (event) => {
+  useEffect(() => {
+    const loggedUserJSON = window.localStorage.getItem("loggedNoteappUser");
+    if (loggedUserJSON) {
+      const user = JSON.parse(loggedUserJSON);
+      setUser(user);
+      noteService.setToken(user.token);
+    }
+  }, []);
+
+  const handleLogin = async (event) => {
     event.preventDefault();
+    try {
+      const user = await loginService.login({ username, password });
+      window.localStorage.setItem("loggedNoteappuser", JSON.stringify(user));
+      noteService.setToken(user.token);
+      setUser(user);
+      setUsername("");
+      setPassword("");
+    } catch (error) {
+      setErrorMessage("Wrong Credentials");
+      setTimeout(setErrorMessage(null), 3000);
+    }
     console.log("Logging in with", username, password);
   };
 
@@ -80,33 +106,54 @@ const App = (props) => {
     ? notes
     : notes.filter((note) => note.important === true);
 
+  // const noteForm = () => (
+  //   <form onSubmit={addNote}>
+  //     <input value={newNote} onChange={handleNoteChange} />
+  //     <button type="submit">Save Note</button>
+  //   </form>
+  // );
+
+  const loginForm = () => {
+    const hideWhenVisible = { display: loginVisible ? "none" : "" };
+    const showWhenVisible = { display: loginVisible ? "" : "none" };
+
+    return (
+      <div>
+        <div style={hideWhenVisible}>
+          <button onClick={() => setLoginVisible(true)}>Login</button>
+        </div>
+        <div style={showWhenVisible}>
+          <LoginForm
+            username={username}
+            password={password}
+            handlePasswordChange={({ target }) => setPassword(target.value)}
+            handleUsernameChange={({ target }) => setUsername(target.value)}
+            handleSubmit={handleLogin}
+          />
+          <button onClick={() => setLoginVisible(false)}>Cancel</button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="header">
       <h1>Notes</h1>
       <Notification message={errorMessage} />
-
-      <form onSubmit={handleLogin}>
+      {user === null ? (
+        loginForm()
+      ) : (
         <div>
-          username
-          <input
-            type="text"
-            value={username}
-            name="Username"
-            onChange={({ target }) => setUsername(target.value)}
-          />
+          <p>{user.name} Logged In</p>
+          <Toggleable buttonLabel="New Note">
+            <NoteForm
+              onSubmit={addNote}
+              value={newNote}
+              handleChange={handleNoteChange}
+            />
+          </Toggleable>
         </div>
-        <div>
-          password
-          <input
-            type="password"
-            value={password}
-            name="Password"
-            onChange={({ target }) => setPassword(target.value)}
-          />
-        </div>
-        <button type="submit">Login</button>
-      </form>
-
+      )}
       <div>
         <button onClick={() => setShowAll(!showAll)}>
           Show {showAll ? "Important" : "All"}
@@ -121,10 +168,7 @@ const App = (props) => {
           />
         ))}
       </ul>
-      <form onSubmit={addNote}>
-        <input value={newNote} onChange={handleNoteChange} />
-        <button type="submit">Save Note</button>
-      </form>
+
       <Footer />
     </div>
   );
