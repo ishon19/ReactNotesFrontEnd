@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Note from "./Note";
 import noteService from "../services/note";
 import loginService from "../services/login";
@@ -64,6 +64,7 @@ const App = (props) => {
   };
 
   const addNote = (event) => {
+    noteFormRef.current.toggleVisibility();
     event.preventDefault();
     const noteObject = {
       content: newNote,
@@ -106,12 +107,13 @@ const App = (props) => {
     ? notes
     : notes.filter((note) => note.important === true);
 
-  // const noteForm = () => (
-  //   <form onSubmit={addNote}>
-  //     <input value={newNote} onChange={handleNoteChange} />
-  //     <button type="submit">Save Note</button>
-  //   </form>
-  // );
+  const noteFormRef = useRef();
+
+  const noteForm = () => (
+    <Toggleable buttonLabel="new note" ref={noteFormRef}>
+      <NoteForm createNote={addNote} />
+    </Toggleable>
+  );
 
   const loginForm = () => {
     const hideWhenVisible = { display: loginVisible ? "none" : "" };
@@ -145,13 +147,7 @@ const App = (props) => {
       ) : (
         <div>
           <p>{user.name} Logged In</p>
-          <Toggleable buttonLabel="New Note">
-            <NoteForm
-              onSubmit={addNote}
-              value={newNote}
-              handleChange={handleNoteChange}
-            />
-          </Toggleable>
+          {noteForm()}
         </div>
       )}
       <div>
