@@ -30,6 +30,7 @@ const App = (props) => {
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
   const [loginVisible, setLoginVisible] = useState(false);
+  const noteFormRef = React.createRef();
 
   const hook = () => {
     console.log("effect");
@@ -58,24 +59,15 @@ const App = (props) => {
       setPassword("");
     } catch (error) {
       setErrorMessage("Wrong Credentials");
-      setTimeout(setErrorMessage(null), 3000);
+      setTimeout(setErrorMessage("Wrong Credentials"), 1500);
     }
     console.log("Logging in with", username, password);
   };
 
-  const addNote = (event) => {
-    noteFormRef.current.toggleVisibility();
-    event.preventDefault();
-    const noteObject = {
-      content: newNote,
-      date: new Date().toISOString(),
-      important: Math.random() < 0.5,
-      //id: notes.length + 1,
-    };
-
+  const addNote = (noteObject) => {
+    //noteFormRef.current.toggleVisibility();
     noteService.create(noteObject).then((returnedNote) => {
       setNotes(notes.concat(returnedNote));
-      setNewNote("");
     });
   };
 
@@ -106,8 +98,6 @@ const App = (props) => {
   const notesToShow = showAll
     ? notes
     : notes.filter((note) => note.important === true);
-
-  const noteFormRef = useRef();
 
   const noteForm = () => (
     <Toggleable buttonLabel="new note" ref={noteFormRef}>
